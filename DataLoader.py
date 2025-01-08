@@ -187,6 +187,7 @@ def __getitem__(self, index):
     image_input["point_coords"] = point_coords
     image_input["point_labels"] = point_labels
     image_input["mask_names"] = mask_names_list  # Aggiungi i nomi delle maschere al dizionario
+    image_input["prova"] = 5
 
     # Aggiungi il nome dell'immagine se richiesto
     image_name = self.image_paths[index].split('/')[-1]
