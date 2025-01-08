@@ -128,62 +128,72 @@ class TrainingDataset(Dataset):
         self.image_paths = list(dataset.keys())
         self.label_paths = list(dataset.values())
     
-    def __getitem__(self, index):
-        """
-        Returns a sample from the dataset.
-        Args:
-            index (int): Index of the sample.
-        Returns:
-            dict: A dictionary containing the sample data.
-        """
+def __getitem__(self, index):
+    """
+    Returns a sample from the dataset.
+    Args:
+        index (int): Index of the sample.
+    Returns:
+        dict: A dictionary containing the sample data.
+    """
 
-        image_input = {}
-        try:
-            image = cv2.imread(self.image_paths[index])
-            image = (image - self.pixel_mean) / self.pixel_std
-        except:
-            print(self.image_paths[index])
+    image_input = {}
+    try:
+        image = cv2.imread(self.image_paths[index])
+        image = (image - self.pixel_mean) / self.pixel_std
+    except:
+        print(self.image_paths[index])
 
-        h, w, _ = image.shape
-        transforms = train_transforms(self.image_size, h, w)
+    h, w, _ = image.shape
+    transforms = train_transforms(self.image_size, h, w)
     
-        masks_list = []
-        boxes_list = []
-        point_coords_list, point_labels_list = [], []
-        mask_path = self.label_paths[index]
-        for m in mask_path:
-            pre_mask = cv2.imread(m, 0)
-            if pre_mask.max() == 255:
-                pre_mask = pre_mask / 255
+    masks_list = []
+    boxes_list = []
+    point_coords_list, point_labels_list = [], []
+    mask_names_list = []  # Lista per i nomi delle maschere
 
-            augments = transforms(image=image, mask=pre_mask)
-            image_tensor, mask_tensor = augments['image'], augments['mask'].to(torch.int64)
+    # Estrazione delle maschere
+    mask_path = random.choices(self.label_paths[index], k=self.mask_num)
+    for m in mask_path:
+        pre_mask = cv2.imread(m, 0)
+        if pre_mask.max() == 255:
+            pre_mask = pre_mask / 255
 
-            boxes = get_boxes_from_mask(mask_tensor)
-            point_coords, point_label = init_point_sampling(mask_tensor, self.point_num)
+        augments = transforms(image=image, mask=pre_mask)
+        image_tensor, mask_tensor = augments['image'], augments['mask'].to(torch.int64)
 
-            masks_list.append(mask_tensor)
-            boxes_list.append(boxes)
-            point_coords_list.append(point_coords)
-            point_labels_list.append(point_label)
+        boxes = get_boxes_from_mask(mask_tensor)
+        point_coords, point_label = init_point_sampling(mask_tensor, self.point_num)
 
-        mask = torch.stack(masks_list, dim=0)
-        boxes = torch.stack(boxes_list, dim=0)
-        point_coords = torch.stack(point_coords_list, dim=0)
-        point_labels = torch.stack(point_labels_list, dim=0)
+        masks_list.append(mask_tensor)
+        boxes_list.append(boxes)
+        point_coords_list.append(point_coords)
+        point_labels_list.append(point_label)
 
-        image_input["image"] = image_tensor.unsqueeze(0)
-        image_input["label"] = mask.unsqueeze(1)
-        image_input["boxes"] = boxes
-        image_input["point_coords"] = point_coords
-        image_input["point_labels"] = point_labels
+        # Aggiungi il nome della maschera alla lista
+        mask_name = m.split('/')[-1]
+        mask_names_list.append(mask_name)
 
-        image_name = self.image_paths[index].split('/')[-1]
-        if self.requires_name:
-            image_input["name"] = image_name
-            return image_input
-        else:
-            return image_input
+    # Creazione dei tensori per maschere, box e punti
+    mask = torch.stack(masks_list, dim=0)
+    boxes = torch.stack(boxes_list, dim=0)
+    point_coords = torch.stack(point_coords_list, dim=0)
+    point_labels = torch.stack(point_labels_list, dim=0)
+
+    # Costruzione del dizionario di output
+    image_input["image"] = image_tensor.unsqueeze(0)
+    image_input["label"] = mask.unsqueeze(1)
+    image_input["boxes"] = boxes
+    image_input["point_coords"] = point_coords
+    image_input["point_labels"] = point_labels
+    image_input["mask_names"] = mask_names_list  # Aggiungi i nomi delle maschere al dizionario
+
+    # Aggiungi il nome dell'immagine se richiesto
+    image_name = self.image_paths[index].split('/')[-1]
+    if self.requires_name:
+        image_input["name"] = image_name
+
+    return image_input
     def __len__(self):
         return len(self.image_paths)
 
