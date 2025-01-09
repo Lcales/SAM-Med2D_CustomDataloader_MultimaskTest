@@ -195,8 +195,9 @@ def __getitem__(self, index):
         image_input["name"] = image_name
 
     return image_input
-    def __len__(self):
-        return len(self.image_paths)
+
+def __len__(self):
+    return len(self.image_paths)
 
 
 def stack_dict_batched(batched_input):
