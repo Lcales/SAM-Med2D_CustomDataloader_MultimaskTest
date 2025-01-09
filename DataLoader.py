@@ -185,8 +185,12 @@ class TrainingDataset(Dataset):
         image_name = self.image_paths[index].split('/')[-1]
         if self.requires_name:
             image_input["name"] = image_name
+            print(f"Image input keys: {image_input.keys()}")
+            print(f"Image input: {image_input}")
             return image_input
         else:
+            print(f"Image input keys: {image_input.keys()}")
+            print(f"Image input: {image_input}")
             return image_input
     def __len__(self):
         return len(self.image_paths)
