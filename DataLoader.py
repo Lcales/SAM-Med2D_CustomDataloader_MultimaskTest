@@ -157,7 +157,7 @@ class TrainingDataset(Dataset):
 
             
             mask_name = m.split('/')[-1] 
-            mask_names_list.append(mask_name)
+            masks_list.append(mask_name)
             augments = transforms(image=image, mask=pre_mask)
             image_tensor, mask_tensor = augments['image'], augments['mask'].to(torch.int64)
 
@@ -179,6 +179,7 @@ class TrainingDataset(Dataset):
         image_input["boxes"] = boxes
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
+        image_input["label_name"] = masks_list
 
         image_name = self.image_paths[index].split('/')[-1]
         if self.requires_name:
