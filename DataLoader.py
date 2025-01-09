@@ -148,6 +148,7 @@ class TrainingDataset(Dataset):
     
         masks_list = []
         boxes_list = []
+        masks_name_list = []
         point_coords_list, point_labels_list = [], []
         mask_path = random.choices(self.label_paths[index], k=self.mask_num)
         for m in mask_path:
@@ -157,7 +158,7 @@ class TrainingDataset(Dataset):
 
             
             mask_name = m.split('/')[-1] 
-            masks_list.append(mask_name)
+            masks_name_list.append(mask_name)
             augments = transforms(image=image, mask=pre_mask)
             image_tensor, mask_tensor = augments['image'], augments['mask'].to(torch.int64)
 
@@ -179,8 +180,7 @@ class TrainingDataset(Dataset):
         image_input["boxes"] = boxes
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
-        image_input["label_name"] = self.label_paths[index]
-        image_input["prova"] = 1
+        image_input["label_name"] = mask_name_lists
 
         image_name = self.image_paths[index].split('/')[-1]
         if self.requires_name:
