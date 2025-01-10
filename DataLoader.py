@@ -105,7 +105,7 @@ class TestingDataset(Dataset):
 
 
 class TrainingDataset(Dataset):
-    def __init__(self, data_dir, image_size=256, mode='train', requires_name=True, point_num=1, mask_num=5):
+    def __init__(self, data_dir, image_size=256, mode='train', requires_name=True, point_num=1):
         """
         Initializes a training dataset.
         Args:
@@ -113,13 +113,11 @@ class TrainingDataset(Dataset):
             image_size (int, optional): Desired size for the input images. Defaults to 256.
             mode (str, optional): Mode of the dataset. Defaults to 'train'.
             requires_name (bool, optional): Indicates whether to include image names in the output. Defaults to True.
-            num_points (int, optional): Number of points to sample. Defaults to 1.
-            num_masks (int, optional): Number of masks to sample. Defaults to 5.
+            point_num (int, optional): Number of points to sample. Defaults to 1.
         """
         self.image_size = image_size
         self.requires_name = requires_name
         self.point_num = point_num
-        self.mask_num = mask_num
         self.pixel_mean = [123.675, 116.28, 103.53]
         self.pixel_std = [58.395, 57.12, 57.375]
 
@@ -138,10 +136,11 @@ class TrainingDataset(Dataset):
 
         image_input = {}
         try:
+            # Carica l'immagine e normalizzala
             image = cv2.imread(self.image_paths[index])
             image = (image - self.pixel_mean) / self.pixel_std
-        except:
-            print(self.image_paths[index])
+        except Exception as e:
+            print(f"Errore durante il caricamento dell'immagine {self.image_paths[index]}: {e}")
 
         h, w, _ = image.shape
         transforms = train_transforms(self.image_size, h, w)
@@ -150,48 +149,53 @@ class TrainingDataset(Dataset):
         boxes_list = []
         masks_name_list = []
         point_coords_list, point_labels_list = [], []
-        mask_path = random.choices(self.label_paths[index], k=self.mask_num)
-        for m in mask_path:
-            pre_mask = cv2.imread(m, 0)
-            if pre_mask.max() == 255:
-                pre_mask = pre_mask / 255
 
-            
-            mask_name = m.split('/')[-1] 
-            masks_name_list.append(mask_name)
-            augments = transforms(image=image, mask=pre_mask)
-            image_tensor, mask_tensor = augments['image'], augments['mask'].to(torch.int64)
+        # Carica tutte le maschere associate all'immagine corrente
+        for m in self.label_paths[index]:
+            try:
+                pre_mask = cv2.imread(m, 0)
+                if pre_mask.max() == 255:
+                    pre_mask = pre_mask / 255
 
+                # Aggiungi il nome della maschera
+                mask_name = m.split('/')[-1] 
+                masks_name_list.append(mask_name)
+                masks_list.append(pre_mask)
+            except Exception as e:
+                print(f"Errore durante il caricamento della maschera {m}: {e}")
+
+        # Applica le trasformazioni alle immagini e a tutte le maschere
+        augments = transforms(image=image, masks=masks_list)
+        image_tensor = augments['image']
+        masks_tensor = torch.stack([torch.tensor(mask, dtype=torch.int64) for mask in augments['masks']])
+
+        # Calcola bounding boxes e punti per ogni maschera
+        for mask_tensor in masks_tensor:
             boxes = get_boxes_from_mask(mask_tensor)
             point_coords, point_label = init_point_sampling(mask_tensor, self.point_num)
-
-            masks_list.append(mask_tensor)
             boxes_list.append(boxes)
             point_coords_list.append(point_coords)
             point_labels_list.append(point_label)
 
-        mask = torch.stack(masks_list, dim=0)
+        # Converte in tensori
         boxes = torch.stack(boxes_list, dim=0)
         point_coords = torch.stack(point_coords_list, dim=0)
         point_labels = torch.stack(point_labels_list, dim=0)
 
-        image_input["image"] = image_tensor.unsqueeze(0)
-        image_input["label"] = mask.unsqueeze(1)
+        image_input["image"] = image_tensor.unsqueeze(0)  # Aggiungi dimensione batch
+        image_input["label"] = masks_tensor.unsqueeze(1)  # Aggiungi dimensione per canale
         image_input["boxes"] = boxes
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
         image_input["label_name"] = masks_name_list
 
+        # Aggiungi il nome dell'immagine, se richiesto
         image_name = self.image_paths[index].split('/')[-1]
         if self.requires_name:
             image_input["name"] = image_name
-            print(f"Image input keys: {image_input.keys()}")
-            print(f"Image input: {image_input}")
-            return image_input
-        else:
-            print(f"Image input keys: {image_input.keys()}")
-            print(f"Image input: {image_input}")
-            return image_input
+
+        return image_input
+
     def __len__(self):
         return len(self.image_paths)
 
