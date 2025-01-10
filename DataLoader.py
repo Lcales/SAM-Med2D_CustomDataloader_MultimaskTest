@@ -168,7 +168,7 @@ class TrainingDataset(Dataset):
         # Applica le trasformazioni alle immagini e a tutte le maschere
         augments = transforms(image=image, masks=masks_list)
         image_tensor = augments['image']
-        masks_tensor = torch.stack([torch.tensor(mask, dtype=torch.int64) for mask in augments['masks']])
+        masks_tensor = torch.stack([mask.clone().detach().to(dtype=torch.int64) for mask in augments['masks']])
 
         # Calcola bounding boxes e punti per ogni maschera
         for mask_tensor in masks_tensor:
