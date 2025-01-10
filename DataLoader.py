@@ -180,7 +180,7 @@ class TrainingDataset(Dataset):
         image_input["boxes"] = boxes
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
-        image_input["label_name"] = mask_name_lists
+        image_input["label_name"] = mask_name_list
 
         image_name = self.image_paths[index].split('/')[-1]
         if self.requires_name:
