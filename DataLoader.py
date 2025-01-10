@@ -8,7 +8,7 @@ import numpy as np
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import train_transforms, get_boxes_from_mask, init_point_sampling
+from utils import train_transforms, test_transforms, get_boxes_from_mask, init_point_sampling
 import json
 import random
 
@@ -69,7 +69,7 @@ class TestingDataset(Dataset):
         h, w = ori_np_mask.shape
         ori_mask = torch.tensor(ori_np_mask).unsqueeze(0)
 
-        transforms = train_transforms(self.image_size, h, w)
+        transforms = test_transforms(self.image_size, h, w)
         augments = transforms(image=image, mask=ori_np_mask)
         image, mask = augments['image'], augments['mask'].to(torch.int64)
 
