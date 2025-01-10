@@ -105,7 +105,7 @@ class TestingDataset(Dataset):
 
 
 class TrainingDataset(Dataset):
-    def __init__(self, data_dir, image_size=256, mode='train', requires_name=True, point_num=1):
+    def __init__(self, data_dir, image_size=256, mode='train', requires_name=True, mask_num=None, point_num=1):
         """
         Initializes a training dataset.
         Args:
@@ -120,6 +120,7 @@ class TrainingDataset(Dataset):
         self.point_num = point_num
         self.pixel_mean = [123.675, 116.28, 103.53]
         self.pixel_std = [58.395, 57.12, 57.375]
+        self.mask_num = mask_num
 
         dataset = json.load(open(os.path.join(data_dir, f'image2label_{mode}.json'), "r"))
         self.image_paths = list(dataset.keys())
