@@ -68,7 +68,12 @@ class TestingDataset(Dataset):
         # Controllo che ogni maschera sia binaria
         for i, m in enumerate(masks):
             assert torch.equal(m, m.bool()), f"Mask {mask_paths[i]} contains non-binary values!"
-
+        
+        # Applica le trasformazioni
+        h, w = masks.shape[1], masks.shape[2]
+        transforms = test_transforms(self.image_size, h, w)
+        augments = transforms(image=image, mask=masks.numpy())  # Trasposizione per augmentazioni
+        image, masks = augments['image'], torch.tensor(augments['mask'])  # (N, H, W)
         # Impila le maschere (dimensione: N, H, W)
         masks = torch.stack(masks, dim=0)
 
@@ -81,12 +86,6 @@ class TestingDataset(Dataset):
             coords, labels = init_point_sampling(mask, self.point_num)
             point_coords.append(coords)
             point_labels.append(labels)
-
-        # Applica le trasformazioni
-        h, w = masks.shape[1], masks.shape[2]
-        transforms = test_transforms(self.image_size, h, w)
-        augments = transforms(image=image, mask=masks.numpy().transpose(1, 2, 0))  # Trasposizione per augmentazioni
-        image, masks = augments['image'], torch.tensor(augments['mask']).permute(2, 0, 1)  # (N, H, W)
 
         # Organizza l'output
         image_input["image"] = image
