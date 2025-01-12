@@ -63,7 +63,6 @@ class TestingDataset(Dataset):
         mask_paths = self.mask_paths[index]
         masks = [cv2.imread(mp, 0) for mp in mask_paths]
         masks = [m / 255 if m.max() == 255 else m for m in masks]
-        masks = [torch.tensor(m, dtype=torch.float32) for m in masks]
 
         # Controllo che ogni maschera sia binaria
         for i, m in enumerate(masks):
