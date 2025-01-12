@@ -66,7 +66,7 @@ class TestingDataset(Dataset):
 
         # Controllo che ogni maschera sia binaria
         for i, m in enumerate(masks):
-            assert np.array_equal(m, m.bool()), f"Mask {mask_paths[i]} contains non-binary values!"
+            assert np.array_equal(m, m.astype(bool)), f"Mask {mask_paths[i]} contains non-binary values!"
         
         # Applica le trasformazioni
         h, w = masks[0].shape
