@@ -72,7 +72,7 @@ class TestingDataset(Dataset):
         # Applica le trasformazioni
         h, w = masks[0].shape
         transforms = test_transforms(self.image_size, h, w)
-        augments = transforms(image=image, masks=masks_list)
+        augments = transforms(image=image, masks=masks)
         image = augments['image']
         masks = torch.stack([mask.clone().detach().to(dtype=torch.int64) for mask in augments['masks']])
 
