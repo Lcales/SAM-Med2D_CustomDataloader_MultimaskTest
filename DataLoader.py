@@ -97,7 +97,7 @@ class TestingDataset(Dataset):
         image_input["point_labels"] = point_labels
         image_input["original_size"] = (h, w)
         if self.return_ori_mask:
-            image_input["ori_label"] = ori_mask
+            image_input["ori_label"] = ori_masks
 
         # Aggiungi il nome dell'immagine se richiesto
         if self.requires_name:
