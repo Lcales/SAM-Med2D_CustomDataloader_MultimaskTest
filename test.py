@@ -61,21 +61,30 @@ def to_device(batch_input, device):
 
 def postprocess_masks(low_res_masks, image_size, original_size):
     ori_h, ori_w = original_size
-    masks = F.interpolate(
-        low_res_masks,
-        (image_size, image_size),
-        mode="bilinear",
-        align_corners=False,
+    # Interpoliamo ogni canale separatamente
+    masks = []
+    for i in range(low_res_masks.shape[1]):  # Iteriamo sui canali (4 in questo caso)
+        mask = low_res_masks[:, i:i+1, :, :]  # Prendiamo il canale specifico
+        mask = F.interpolate(
+            mask,
+            (image_size, image_size),
+            mode="bilinear",
+            align_corners=False,
         )
+        
+        if ori_h < image_size and ori_w < image_size:
+            top = torch.div((image_size - ori_h), 2, rounding_mode='trunc')
+            left = torch.div((image_size - ori_w), 2, rounding_mode='trunc')
+            mask = mask[..., top:ori_h + top, left:ori_w + left]
+            pad = (top, left)
+        else:
+            mask = F.interpolate(mask, original_size, mode="bilinear", align_corners=False)
+            pad = None
+        
+        masks.append(mask)
     
-    if ori_h < image_size and ori_w < image_size:
-        top = torch.div((image_size - ori_h), 2, rounding_mode='trunc')  #(image_size - ori_h) // 2
-        left = torch.div((image_size - ori_w), 2, rounding_mode='trunc') #(image_size - ori_w) // 2
-        masks = masks[..., top : ori_h + top, left : ori_w + left]
-        pad = (top, left)
-    else:
-        masks = F.interpolate(masks, original_size, mode="bilinear", align_corners=False)
-        pad = None 
+    # Combiniamo i canali trattati separatamente
+    masks = torch.cat(masks, dim=1)  # Combiniamo i canali lungo la dimensione del canale
     return masks, pad
 
 
