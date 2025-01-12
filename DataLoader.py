@@ -64,6 +64,10 @@ class TestingDataset(Dataset):
         masks = [cv2.imread(mp, 0) for mp in mask_paths]
         masks = [m / 255 if m.max() == 255 else m for m in masks]
 
+        # Salvataggio maschere originali
+        ori_masks = [mask.copy() for mask in masks]
+        ori_masks = [torch.tensor(mask, dtype=torch.int64) for mask in ori_masks]
+
         # Controllo che ogni maschera sia binaria
         for i, m in enumerate(masks):
             assert np.array_equal(m, m.astype(bool)), f"Mask {mask_paths[i]} contains non-binary values!"
@@ -92,10 +96,6 @@ class TestingDataset(Dataset):
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
         image_input["original_size"] = (h, w)
-        
-        # Ritorna la maschera originale se richiesto
-        if self.return_ori_mask:
-            image_input["ori_label"] = masks.clone()
 
         # Aggiungi il nome dell'immagine se richiesto
         if self.requires_name:
