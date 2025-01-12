@@ -72,10 +72,9 @@ class TestingDataset(Dataset):
         # Applica le trasformazioni
         h, w = masks[0].shape
         transforms = test_transforms(self.image_size, h, w)
-        augments = transforms(image=image, mask=masks.numpy())  # Trasposizione per augmentazioni
-        image, masks = augments['image'], torch.tensor(augments['mask'])  # (N, H, W)
-        # Impila le maschere (dimensione: N, H, W)
-        masks = torch.stack(masks, dim=0)
+        augments = transforms(image=image, masks=masks_list)
+        image = augments['image']
+        masks = torch.stack([mask.clone().detach().to(dtype=torch.int64) for mask in augments['masks']])
 
         # Calcola i box e i punti per ogni maschera
         boxes = []
