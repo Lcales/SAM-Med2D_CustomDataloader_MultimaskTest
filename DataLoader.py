@@ -70,7 +70,7 @@ class TestingDataset(Dataset):
             assert torch.equal(m, m.bool()), f"Mask {mask_paths[i]} contains non-binary values!"
         
         # Applica le trasformazioni
-        h, w = masks.shape[1], masks.shape[2]
+        h, w = masks[0].shape[1], masks[0].shape[2]
         transforms = test_transforms(self.image_size, h, w)
         augments = transforms(image=image, mask=masks.numpy())  # Trasposizione per augmentazioni
         image, masks = augments['image'], torch.tensor(augments['mask'])  # (N, H, W)
