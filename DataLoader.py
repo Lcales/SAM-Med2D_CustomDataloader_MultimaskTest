@@ -40,7 +40,7 @@ class TestingDataset(Dataset):
             self.prompt_list = {}
 
         # Carica il JSON che associa le immagini a più maschere
-        json_file_path = os.path.join(data_path, f'label2masks_{mode}.json')
+        json_file_path = os.path.join(data_path, f'image2label_{mode}.json')
         with open(json_file_path, "r") as json_file:
             self.dataset = json.load(json_file)
 
