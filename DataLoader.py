@@ -76,26 +76,27 @@ class TestingDataset(Dataset):
         h, w = masks[0].shape
         transforms = test_transforms(self.image_size, h, w)
         augments = transforms(image=image, masks=masks)
-        image = augments['image']
-        masks = torch.stack([mask.clone().detach().to(dtype=torch.int64) for mask in augments['masks']])
+        image_tensor = augments['image']
+        masks_tensor = torch.stack([mask.clone().detach().to(dtype=torch.int64) for mask in augments['masks']])
 
         # Calcola i box e i punti per ogni maschera
-        boxes = []
-        point_coords = []
-        point_labels = []
-        for mask in masks:
-            boxes.append(get_boxes_from_mask(mask, max_pixel=0))
+        boxes_list = []
+        point_coords_list = []
+        point_labels_list = []
+        for mask in :
+            boxes_list.append(get_boxes_from_mask(mask))
             coords, labels = init_point_sampling(mask, self.point_num)
-            point_coords.append(coords)
-            point_labels.append(labels)
+            point_coords_list.append(coords)
+            point_labels_list.append(labels)
             
         point_coords = torch.stack(point_coords_list, dim=0)
         point_labels = torch.stack(point_labels_list, dim=0)
         boxes = torch.stack(boxes_list, dim=0)
+        
 
         # Organizza l'output
-        image_input["image"] = image
-        image_input["label"] = masks
+        image_input["image"] = image_tensor.unsqueeze(0)
+        image_input["label"] = masks_tensor.unsqueeze(1)
         image_input["boxes"] = boxes
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
