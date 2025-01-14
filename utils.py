@@ -248,12 +248,19 @@ def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,
     mask_name = mask_name.replace('.png', '')  # Rimuove '.png' dal nome del file
 
     # Liste delle strutture da cui vengono prese le maschere (ordina alfabeticamente se necessario)
-    structure_names = ['artery', 'vein', 'stomach', 'liver']  # Aggiungi o modifica le strutture secondo il tuo caso
+    structure_names = ['artery', 'liver', 'stomach', 'vein']  # Aggiungi o modifica le strutture secondo il tuo caso
+
+    # Aggiungi il controllo di debug per verificare la presenza delle maschere
+    missing_masks = []
 
     # Itera su ciascun canale (ad esempio 4 canali per 4 strutture)
     for channel_idx in range(preds.shape[0]):  # preds.shape[0] è il numero di canali
         mask = preds[channel_idx].squeeze().cpu().numpy()  # Seleziona il canale e rimuovi dimensioni inutili
         mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)  # Converti in immagine a 3 canali per visualizzare
+
+        # Controllo di debug: se la maschera è vuota o None
+        if mask is None or mask.size == 0:
+            missing_masks.append(structure_names[channel_idx])
 
         # Aggiungi la parte per visualizzare il prompt, se necessario
         if visual_prompt: 
@@ -294,7 +301,10 @@ def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,
         # Usa il nome dell'immagine (senza il '.png') e la struttura per il nome del file
         mask_path = os.path.join(save_path, f"{mask_name}_{structure_names[channel_idx]}.png")  # Usa l'indice della struttura
         cv2.imwrite(mask_path, np.uint8(mask))  # Salva la maschera come immagine PNG
-        print(f"Maschera {structure_names[channel_idx]} salvata in: {mask_path}")
+    
+    # Stampa le maschere mancanti, se ce ne sono
+    if missing_masks:
+        print(f"Le seguenti maschere sono mancanti o vuote: {', '.join(missing_masks)}")
 
 
 #Loss funcation
