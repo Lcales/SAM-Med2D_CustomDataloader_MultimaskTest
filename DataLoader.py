@@ -87,7 +87,7 @@ class TestingDataset(Dataset):
         boxes_list = []
         point_coords_list = []
         point_labels_list = []
-        for mask in :
+        for mask in masks_tensor:
             boxes_list.append(get_boxes_from_mask(mask))
             coords, labels = init_point_sampling(mask, self.point_num)
             point_coords_list.append(coords)
