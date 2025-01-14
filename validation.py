@@ -9,6 +9,7 @@ from test import (
     sam_model_registry,
     FocalDiceloss_IoULoss,
     TestingDataset,
+    stack_dict_batched
     to_device,
     postprocess_masks,
     prompt_and_decoder,
@@ -66,6 +67,7 @@ def main():
 
         test_pbar = tqdm(test_loader)
         for i, batched_input in enumerate(test_pbar):
+            batched_input = stack_dict_batched(batched_input)
             batched_input = to_device(batched_input, args.device)
             ori_labels = batched_input["ori_label"]
             original_size = batched_input["original_size"]
