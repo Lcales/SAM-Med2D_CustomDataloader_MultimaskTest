@@ -237,51 +237,64 @@ def draw_boxes(img, boxes):
     return img_copy
 
 
-def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,  boxes=None, points=None, visual_prompt=False):
+def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None, boxes=None, points=None, visual_prompt=False):
     ori_h, ori_w = original_size
 
-    preds = torch.sigmoid(preds)
-    preds[preds > 0.5] = int(1)
-    preds[preds <= 0.5] = int(0)
+    preds = torch.sigmoid(preds)  # Applicare la sigmoid per ottenere probabilità
+    preds[preds > 0.5] = 1
+    preds[preds <= 0.5] = 0  # Binarizzare le probabilità
 
-    mask = preds.squeeze().cpu().numpy()
-    mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)
+    # Rimuovi l'estensione '.png' dal nome dell'immagine se presente
+    mask_name = mask_name.replace('.png', '')  # Rimuove '.png' dal nome del file
 
-    if visual_prompt: #visualize the prompt
-        if boxes is not None:
-            boxes = boxes.squeeze().cpu().numpy()
+    # Liste delle strutture da cui vengono prese le maschere (ordina alfabeticamente se necessario)
+    structure_names = ['artery', 'vein', 'stomach', 'liver']  # Aggiungi o modifica le strutture secondo il tuo caso
 
-            x0, y0, x1, y1 = boxes
-            if pad is not None:
-                x0_ori = int((x0 - pad[1]) + 0.5)
-                y0_ori = int((y0 - pad[0]) + 0.5)
-                x1_ori = int((x1 - pad[1]) + 0.5)
-                y1_ori = int((y1 - pad[0]) + 0.5)
-            else:
-                x0_ori = int(x0 * ori_w / image_size) 
-                y0_ori = int(y0 * ori_h / image_size) 
-                x1_ori = int(x1 * ori_w / image_size) 
-                y1_ori = int(y1 * ori_h / image_size)
+    # Itera su ciascun canale (ad esempio 4 canali per 4 strutture)
+    for channel_idx in range(preds.shape[0]):  # preds.shape[0] è il numero di canali
+        mask = preds[channel_idx].squeeze().cpu().numpy()  # Seleziona il canale e rimuovi dimensioni inutili
+        mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)  # Converti in immagine a 3 canali per visualizzare
 
-            boxes = [(x0_ori, y0_ori, x1_ori, y1_ori)]
-            mask = draw_boxes(mask, boxes)
+        # Aggiungi la parte per visualizzare il prompt, se necessario
+        if visual_prompt: 
+            if boxes is not None:
+                boxes = boxes.squeeze().cpu().numpy()
 
-        if points is not None:
-            point_coords, point_labels = points[0].squeeze(0).cpu().numpy(),  points[1].squeeze(0).cpu().numpy()
-            point_coords = point_coords.tolist()
-            if pad is not None:
-                ori_points = [[int((x * ori_w / image_size)) , int((y * ori_h / image_size))]if l==0 else [x - pad[1], y - pad[0]]  for (x, y), l in zip(point_coords, point_labels)]
-            else:
-                ori_points = [[int((x * ori_w / image_size)) , int((y * ori_h / image_size))] for x, y in point_coords]
+                x0, y0, x1, y1 = boxes
+                if pad is not None:
+                    x0_ori = int((x0 - pad[1]) + 0.5)
+                    y0_ori = int((y0 - pad[0]) + 0.5)
+                    x1_ori = int((x1 - pad[1]) + 0.5)
+                    y1_ori = int((y1 - pad[0]) + 0.5)
+                else:
+                    x0_ori = int(x0 * ori_w / image_size) 
+                    y0_ori = int(y0 * ori_h / image_size) 
+                    x1_ori = int(x1 * ori_w / image_size) 
+                    y1_ori = int(y1 * ori_h / image_size)
 
-            for point, label in zip(ori_points, point_labels):
-                x, y = map(int, point)
-                color = (0, 255, 0) if label == 1 else (0, 0, 255)
-                mask[y, x] = color
-                cv2.drawMarker(mask, (x, y), color, markerType=cv2.MARKER_CROSS , markerSize=7, thickness=2)  
-    os.makedirs(save_path, exist_ok=True)
-    mask_path = os.path.join(save_path, f"{mask_name}")
-    cv2.imwrite(mask_path, np.uint8(mask))
+                boxes = [(x0_ori, y0_ori, x1_ori, y1_ori)]
+                mask = draw_boxes(mask, boxes)
+
+            if points is not None:
+                point_coords, point_labels = points[0].squeeze(0).cpu().numpy(),  points[1].squeeze(0).cpu().numpy()
+                point_coords = point_coords.tolist()
+                if pad is not None:
+                    ori_points = [[int((x * ori_w / image_size)) , int((y * ori_h / image_size))] if l == 0 else [x - pad[1], y - pad[0]] for (x, y), l in zip(point_coords, point_labels)]
+                else:
+                    ori_points = [[int((x * ori_w / image_size)) , int((y * ori_h / image_size))] for x, y in point_coords]
+
+                for point, label in zip(ori_points, point_labels):
+                    x, y = map(int, point)
+                    color = (0, 255, 0) if label == 1 else (0, 0, 255)
+                    mask[y, x] = color
+                    cv2.drawMarker(mask, (x, y), color, markerType=cv2.MARKER_CROSS , markerSize=7, thickness=2)  
+
+        # Salva ogni maschera per ciascun canale con il nome dell'immagine e della struttura
+        os.makedirs(save_path, exist_ok=True)
+        # Usa il nome dell'immagine (senza il '.png') e la struttura per il nome del file
+        mask_path = os.path.join(save_path, f"{mask_name}_{structure_names[channel_idx]}.png")  # Usa l'indice della struttura
+        cv2.imwrite(mask_path, np.uint8(mask))  # Salva la maschera come immagine PNG
+        print(f"Maschera {structure_names[channel_idx]} salvata in: {mask_path}")
 
 
 #Loss funcation
