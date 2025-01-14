@@ -9,7 +9,7 @@ from test import (
     sam_model_registry,
     FocalDiceloss_IoULoss,
     TestingDataset,
-    stack_dict_batched
+    stack_dict_batched,
     to_device,
     postprocess_masks,
     prompt_and_decoder,
