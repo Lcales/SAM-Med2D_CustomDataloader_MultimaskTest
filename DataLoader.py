@@ -66,8 +66,12 @@ class TestingDataset(Dataset):
 
         # Salvataggio maschere originali
         ori_masks = [mask.copy() for mask in masks]
-        ori_masks = [torch.tensor(mask, dtype=torch.int64) for mask in ori_masks]
+        ori_masks = torch.stack(
+            [torch.tensor(mask.copy(), dtype=torch.int64) for mask in masks], 
+            dim=0
+        ) 
 
+        
         # Controllo che ogni maschera sia binaria
         for i, m in enumerate(masks):
             assert np.array_equal(m, m.astype(bool)), f"Mask {mask_paths[i]} contains non-binary values!"
@@ -102,7 +106,7 @@ class TestingDataset(Dataset):
         image_input["point_labels"] = point_labels
         image_input["original_size"] = (h, w)
         if self.return_ori_mask:
-            image_input["ori_label"] = ori_masks
+            image_input["ori_label"] = ori_masks.unsqueeze(1)
 
         # Aggiungi il nome dell'immagine se richiesto
         if self.requires_name:
