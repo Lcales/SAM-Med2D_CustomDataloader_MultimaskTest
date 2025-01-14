@@ -88,6 +88,10 @@ class TestingDataset(Dataset):
             coords, labels = init_point_sampling(mask, self.point_num)
             point_coords.append(coords)
             point_labels.append(labels)
+            
+        point_coords = torch.stack(point_coords_list, dim=0)
+        point_labels = torch.stack(point_labels_list, dim=0)
+        boxes = torch.stack(boxes_list, dim=0)
 
         # Organizza l'output
         image_input["image"] = image
