@@ -63,6 +63,10 @@ class TestingDataset(Dataset):
         mask_paths = self.mask_paths[index]
         masks = [cv2.imread(mp, 0) for mp in mask_paths]
         masks = [m / 255 if m.max() == 255 else m for m in masks]
+        masks_name_list = []
+        for mp in mask_paths
+            mask_name = m.split('/')[-1] 
+            masks_name_list.append(mask_name)
 
         # Salvataggio maschere originali
         ori_masks = [mask.copy() for mask in masks]
@@ -105,6 +109,7 @@ class TestingDataset(Dataset):
         image_input["point_coords"] = point_coords
         image_input["point_labels"] = point_labels
         image_input["original_size"] = (h, w)
+        image_input["label_name"] = masks_name_list
         if self.return_ori_mask:
             image_input["ori_label"] = ori_masks.unsqueeze(1)
 
