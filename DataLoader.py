@@ -64,8 +64,8 @@ class TestingDataset(Dataset):
         masks = [cv2.imread(mp, 0) for mp in mask_paths]
         masks = [m / 255 if m.max() == 255 else m for m in masks]
         masks_name_list = []
-        for mp in mask_paths
-            mask_name = m.split('/')[-1] 
+        for mp in mask_paths:
+            mask_name = mp.split('/')[-1] 
             masks_name_list.append(mask_name)
 
         # Salvataggio maschere originali
