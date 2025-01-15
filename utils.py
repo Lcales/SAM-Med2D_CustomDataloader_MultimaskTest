@@ -237,76 +237,52 @@ def draw_boxes(img, boxes):
     return img_copy
 
 
-def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None, boxes=None, points=None, visual_prompt=False):
+def save_masks(preds, save_path, mask_names, image_size, original_size, pad=None, boxes=None, points=None, visual_prompt=False):
     ori_h, ori_w = original_size
 
-    preds = torch.sigmoid(preds)  # Applicare la sigmoid per ottenere probabilità
+    # Applica sigmoid alle predizioni e binarizzale
+    preds = torch.sigmoid(preds)
     preds[preds > 0.5] = 1
-    preds[preds <= 0.5] = 0  # Binarizzare le probabilità
+    preds[preds <= 0.5] = 0
 
-    # Rimuovi l'estensione '.png' dal nome dell'immagine se presente
-    mask_name = mask_name.replace('.png', '')  # Rimuove '.png' dal nome del file
+    missing_masks = []  # Lista per tracciare eventuali maschere mancanti
 
-    # Aggiungi il controllo di debug per verificare la presenza delle maschere
-    missing_masks = []
+    # Itera sui batch di predizioni e nomi delle maschere
+    for i, (pred, mask_name) in enumerate(zip(preds, mask_names)):
+        # Rimuovi l'estensione '.png' dal nome base delle maschere
+        if isinstance(mask_name, tuple):
+            mask_name_base = [name.replace('.png', '') for name in mask_name]
+        else:
+            mask_name_base = mask_name.replace('.png', '')
 
-    # Itera su ciascun canale (ad esempio 4 canali per 4 strutture)
-    for channel_idx in range(preds.shape[0]):  # preds.shape[0] è il numero di canali
-        mask = preds[channel_idx].squeeze().cpu().numpy()  # Seleziona il canale e rimuovi dimensioni inutili
-        mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)  # Converti in immagine a 3 canali per visualizzare
+        # Itera su ciascun canale (un canale per ogni struttura)
+        for channel_idx in range(pred.shape[0]):
+            mask = pred[channel_idx].squeeze().cpu().numpy()  # Ottieni la maschera per il canale corrente
 
-        # Usa il nome completo della maschera (già contenente il nome della struttura)
-        mask_name_structure = f"{mask_name}_{['artery', 'liver', 'stomach', 'vein'][channel_idx]}.png"
+            # Nome della struttura corrispondente al canale
+            structure_name = ['artery', 'liver', 'stomach', 'vein'][channel_idx]
 
-        # Controllo di debug: se la maschera è vuota o None
-        if mask is None or mask.size == 0:
-            missing_masks.append(mask_name_structure)  # Usa il nome completo della maschera
+            # Costruisci il nome della maschera
+            if isinstance(mask_name_base, list):
+                mask_name_structure = f"{mask_name_base[channel_idx]}.png"
+            else:
+                mask_name_structure = f"{mask_name_base}_{structure_name}.png"
 
-        # Aggiungi la parte per visualizzare il prompt, se necessario
-        if visual_prompt: 
-            if boxes is not None:
-                boxes = boxes.squeeze().cpu().numpy()
+            # Controllo per maschere vuote
+            if mask is None or mask.size == 0:
+                missing_masks.append(mask_name_structure)
+                continue
 
-                x0, y0, x1, y1 = boxes
-                if pad is not None:
-                    x0_ori = int((x0 - pad[1]) + 0.5)
-                    y0_ori = int((y0 - pad[0]) + 0.5)
-                    x1_ori = int((x1 - pad[1]) + 0.5)
-                    y1_ori = int((y1 - pad[0]) + 0.5)
-                else:
-                    x0_ori = int(x0 * ori_w / image_size) 
-                    y0_ori = int(y0 * ori_h / image_size) 
-                    x1_ori = int(x1 * ori_w / image_size) 
-                    y1_ori = int(y1 * ori_h / image_size)
+            # Salva ogni maschera con il nome completo
+            os.makedirs(save_path, exist_ok=True)
+            mask_path = os.path.join(save_path, mask_name_structure)
+            cv2.imwrite(mask_path, np.uint8(mask * 255))  # Salva la maschera come immagine PNG
 
-                boxes = [(x0_ori, y0_ori, x1_ori, y1_ori)]
-                mask = draw_boxes(mask, boxes)
-
-            if points is not None:
-                point_coords, point_labels = points[0].squeeze(0).cpu().numpy(),  points[1].squeeze(0).cpu().numpy()
-                point_coords = point_coords.tolist()
-                if pad is not None:
-                    ori_points = [[int((x * ori_w / image_size)) , int((y * ori_h / image_size))] if l == 0 else [x - pad[1], y - pad[0]] for (x, y), l in zip(point_coords, point_labels)]
-                else:
-                    ori_points = [[int((x * ori_w / image_size)) , int((y * ori_h / image_size))] for x, y in point_coords]
-
-                for point, label in zip(ori_points, point_labels):
-                    x, y = map(int, point)
-                    color = (0, 255, 0) if label == 1 else (0, 0, 255)
-                    mask[y, x] = color
-                    cv2.drawMarker(mask, (x, y), color, markerType=cv2.MARKER_CROSS , markerSize=7, thickness=2)  
-
-        # Salva ogni maschera per ciascun canale con il nome dell'immagine e della struttura
-        os.makedirs(save_path, exist_ok=True)
-        mask_path = os.path.join(save_path, mask_name_structure)  # Usa direttamente il nome completo della maschera
-        cv2.imwrite(mask_path, np.uint8(mask))  # Salva la maschera come immagine PNG
-    
-    # Stampa le maschere mancanti, se ce ne sono
+    # Stampa un messaggio per eventuali maschere mancanti
     if missing_masks:
         print(f"Le seguenti maschere sono mancanti o vuote: {', '.join(missing_masks)}")
 
-
-#Loss funcation
+#Loss function
 class FocalLoss(nn.Module):
     def __init__(self, gamma=2.0, alpha=0.25):
         super(FocalLoss, self).__init__()
