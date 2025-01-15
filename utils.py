@@ -247,9 +247,6 @@ def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,
     # Rimuovi l'estensione '.png' dal nome dell'immagine se presente
     mask_name = mask_name.replace('.png', '')  # Rimuove '.png' dal nome del file
 
-    # Liste delle strutture da cui vengono prese le maschere (ordina alfabeticamente se necessario)
-    structure_names = ['artery', 'liver', 'stomach', 'vein']  # Aggiungi o modifica le strutture secondo il tuo caso
-
     # Aggiungi il controllo di debug per verificare la presenza delle maschere
     missing_masks = []
 
@@ -258,9 +255,12 @@ def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,
         mask = preds[channel_idx].squeeze().cpu().numpy()  # Seleziona il canale e rimuovi dimensioni inutili
         mask = cv2.cvtColor(mask * 255, cv2.COLOR_GRAY2BGR)  # Converti in immagine a 3 canali per visualizzare
 
+        # Usa il nome completo della maschera (già contenente il nome della struttura)
+        mask_name_structure = f"{mask_name}_{['artery', 'liver', 'stomach', 'vein'][channel_idx]}.png"
+
         # Controllo di debug: se la maschera è vuota o None
         if mask is None or mask.size == 0:
-            missing_masks.append(structure_names[channel_idx])
+            missing_masks.append(mask_name_structure)  # Usa il nome completo della maschera
 
         # Aggiungi la parte per visualizzare il prompt, se necessario
         if visual_prompt: 
@@ -298,8 +298,7 @@ def save_masks(preds, save_path, mask_name, image_size, original_size, pad=None,
 
         # Salva ogni maschera per ciascun canale con il nome dell'immagine e della struttura
         os.makedirs(save_path, exist_ok=True)
-        # Usa il nome dell'immagine (senza il '.png') e la struttura per il nome del file
-        mask_path = os.path.join(save_path, f"{mask_name}_{structure_names[channel_idx]}.png")  # Usa l'indice della struttura
+        mask_path = os.path.join(save_path, mask_name_structure)  # Usa direttamente il nome completo della maschera
         cv2.imwrite(mask_path, np.uint8(mask))  # Salva la maschera come immagine PNG
     
     # Stampa le maschere mancanti, se ce ne sono
