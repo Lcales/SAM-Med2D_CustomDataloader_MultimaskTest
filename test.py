@@ -149,6 +149,7 @@ def main(args):
         original_size = batched_input["original_size"]
         labels = batched_input["label"]
         img_name = batched_input['name'][0]
+        mask_names = batched_input['label_name']
         if args.prompt_path is None:
             prompt_dict[img_name] = {
                         "boxes": batched_input["boxes"].squeeze(1).cpu().numpy().tolist(),
@@ -184,7 +185,7 @@ def main(args):
 
         masks, pad = postprocess_masks(low_res_masks, args.image_size, original_size)
         if args.save_pred:
-            save_masks(masks, save_path, img_name, args.image_size, original_size, pad, batched_input.get("boxes", None), points_show)
+            save_masks(masks, save_path, mask_names, args.image_size, original_size, pad, batched_input.get("boxes", None), points_show)
 
         loss = criterion(masks, ori_labels, iou_predictions)
         test_loss.append(loss.item())
