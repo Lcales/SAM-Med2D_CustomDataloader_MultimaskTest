@@ -35,7 +35,7 @@ def main():
     test_dataset = TestingDataset(
         data_path=args.data_path,
         image_size=args.image_size,
-        mode="test",
+        mode="val",
         requires_name=True,
         point_num=args.point_num,
         return_ori_mask=True,
