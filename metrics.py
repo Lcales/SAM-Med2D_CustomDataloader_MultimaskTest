@@ -59,3 +59,42 @@ def SegMetrics(pred, label, metrics):
     else:
         raise ValueError('metric mistakes in calculations')
     return metric
+
+def calculate_metrics_per_structure(pred, label, structure_names, metrics):
+    assert pred.shape == label.shape, "Predizioni e label devono avere la stessa forma."
+    num_structures = len(structure_names)
+
+    results = {name: {metric: 0.0 for metric in metrics} for name in structure_names}
+
+    # Debug: stampa le dimensioni delle maschere
+    print(f"Predicted masks shape: {pred.shape}")
+    print(f"Original labels shape: {label.shape}")
+
+    for i, structure_name in enumerate(structure_names):
+        structure_pred = pred[i:i + 1]  # Seleziona la maschera della struttura
+        structure_label = label[i:i + 1]
+
+        # Debug: stampa il nome della struttura e le somme delle maschere
+        print(f"Processing structure: {structure_name}")
+        print(f"Pred mask sum: {structure_pred.sum().item()}")
+        print(f"Label sum: {structure_label.sum().item()}")
+
+        for metric in metrics:
+            if metric == 'iou':
+                # Calcolo dell'IoU
+                iou_value = float(iou(structure_pred, structure_label).mean())
+                results[structure_name][metric] = iou_value
+                # Debug: stampa il valore di IoU
+                print(f"{structure_name} - IoU: {iou_value:.4f}")
+
+            elif metric == 'dice':
+                # Calcolo del Dice
+                dice_value = float(dice(structure_pred, structure_label).mean())
+                results[structure_name][metric] = dice_value
+                # Debug: stampa il valore di Dice
+                print(f"{structure_name} - Dice: {dice_value:.4f}")
+
+            else:
+                raise ValueError(f"Metric '{metric}' non riconosciuta.")
+  
+    return results
