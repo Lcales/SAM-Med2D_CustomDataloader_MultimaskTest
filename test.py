@@ -6,7 +6,7 @@ import os
 from utils import FocalDiceloss_IoULoss, generate_point, save_masks
 from torch.utils.data import DataLoader
 from DataLoader import TestingDataset, stack_dict_batched
-from metrics import SegMetrics
+from metrics import SegMetrics, calculate_metrics_per_structure
 import time
 from tqdm import tqdm
 import numpy as np
@@ -141,6 +141,9 @@ def main(args):
     test_iter_metrics = [0] * len(args.metrics)
     test_metrics = {}
     prompt_dict = {}
+    # Inizializza un dizionario per accumulare le metriche per struttura
+    structure_metrics_accum = {name: {metric: 0.0 for metric in args.metrics} for name in ['artery', 'liver', 'stomach', 'vein']}
+    structure_counts = {name: 0 for name in structure_metrics_accum.keys()}  # Conta quante volte ogni struttura compare
 
     for i, batched_input in enumerate(test_pbar):
         batched_input = stack_dict_batched(batched_input)
@@ -183,7 +186,11 @@ def main(args):
   
             points_show = (torch.concat(point_coords, dim=1), torch.concat(point_labels, dim=1))
 
+        structure_names = [name[0].split('_')[-1].split('.')[0] for name in mask_names]
         masks, pad = postprocess_masks(low_res_masks, args.image_size, original_size)
+        print(f"Predicted masks shape: {masks.shape}")
+        print(f"Original labels shape: {ori_labels.shape}")
+
         if args.save_pred:
             save_masks(masks, save_path, mask_names, args.image_size, original_size, pad, batched_input.get("boxes", None), points_show)
 
@@ -192,9 +199,36 @@ def main(args):
 
         test_batch_metrics = SegMetrics(masks, ori_labels, args.metrics)
         test_batch_metrics = [float('{:.4f}'.format(metric)) for metric in test_batch_metrics]
+        print(f"Batch {i} - Metrics: {test_batch_metrics}")
 
         for j in range(len(args.metrics)):
             test_iter_metrics[j] += test_batch_metrics[j]
+
+        # Calcola le metriche per struttura
+        structure_metrics = calculate_metrics_per_structure(masks, ori_labels, structure_names, args.metrics)
+
+        # Accumula le metriche per struttura
+        # Aggiorna le metriche per struttura e i contatori
+        for structure_name in structure_metrics_accum.keys():
+          if structure_name in structure_metrics:
+            # Accumula le metriche solo se presenti
+            for metric, value in structure_metrics[structure_name].items():
+              structure_metrics_accum[structure_name][metric] += value
+            structure_counts[structure_name] += 1
+          else:
+            # Aggiungi un log per verificare quali strutture mancano
+            print(f"Structure '{structure_name}' not found in batch {i}")
+        print(f"Structure counts: {structure_counts}")
+
+    # Calcola la media delle metriche per struttura
+    average_structure_metrics = {
+      name: {metric: (value / structure_counts[name]) if structure_counts[name] > 0 else 0.0
+           for metric, value in metrics.items()}
+      for name, metrics in structure_metrics_accum.items()
+    }
+
+    print(f"Final test metrics: {test_metrics}")
+    print(f"Final metrics per structure: {average_structure_metrics}")
   
     test_iter_metrics = [metric / l for metric in test_iter_metrics]
     test_metrics = {args.metrics[i]: '{:.4f}'.format(test_iter_metrics[i]) for i in range(len(test_iter_metrics))}
@@ -204,6 +238,9 @@ def main(args):
         with open(os.path.join(args.work_dir,f'{args.image_size}_prompt.json'), 'w') as f:
             json.dump(prompt_dict, f, indent=2)
     print(f"Test loss: {average_loss:.4f}, metrics: {test_metrics}")
+    print("Metrics per structure:")
+    for structure, metrics in average_structure_metrics.items():
+      print(f"{structure}: {metrics}")
 
 
 if __name__ == '__main__':
