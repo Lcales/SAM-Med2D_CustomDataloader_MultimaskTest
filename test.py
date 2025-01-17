@@ -188,8 +188,6 @@ def main(args):
 
         structure_names = [name[0].split('_')[-1].split('.')[0] for name in mask_names]
         masks, pad = postprocess_masks(low_res_masks, args.image_size, original_size)
-        print(f"Predicted masks shape: {masks.shape}")
-        print(f"Original labels shape: {ori_labels.shape}")
 
         if args.save_pred:
             save_masks(masks, save_path, mask_names, args.image_size, original_size, pad, batched_input.get("boxes", None), points_show)
@@ -199,7 +197,6 @@ def main(args):
 
         test_batch_metrics = SegMetrics(masks, ori_labels, args.metrics)
         test_batch_metrics = [float('{:.4f}'.format(metric)) for metric in test_batch_metrics]
-        print(f"Batch {i} - Metrics: {test_batch_metrics}")
 
         for j in range(len(args.metrics)):
             test_iter_metrics[j] += test_batch_metrics[j]
@@ -218,7 +215,6 @@ def main(args):
           else:
             # Aggiungi un log per verificare quali strutture mancano
             print(f"Structure '{structure_name}' not found in batch {i}")
-        print(f"Structure counts: {structure_counts}")
 
     # Calcola la media delle metriche per struttura
     average_structure_metrics = {
