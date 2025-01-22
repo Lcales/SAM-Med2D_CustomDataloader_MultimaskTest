@@ -41,6 +41,17 @@ def dice(pr, gt, eps=1e-7, threshold = 0.5):
     return ((2. * intersection +eps) / (union + eps)).cpu().numpy()
 
 
+def precision(pr, gt, eps=1e-7, threshold=0.5):
+    pr_, gt_ = _list_tensor(pr, gt)
+    pr_ = _threshold(pr_, threshold=threshold)
+    gt_ = _threshold(gt_, threshold=threshold)
+    true_positives = torch.sum(gt_ * pr_, dim=[1, 2, 3])  
+    false_positives = torch.sum((1 - gt_) * pr_, dim=[1, 2, 3])  
+    precision_value = (true_positives + eps) / (true_positives + false_positives + eps)
+    return precision_value.cpu().numpy()
+
+
+
 def SegMetrics(pred, label, metrics):
     metric_list = []  
     if isinstance(metrics, str):
@@ -85,6 +96,11 @@ def calculate_metrics_per_structure(pred, label, structure_names, metrics):
                 # Calcolo del Dice
                 dice_value = float(dice(structure_pred, structure_label).mean())
                 results[structure_name][metric] = dice_value
+
+            elif metric == 'precision':
+                # Calcolo della Precision
+                precision_value = float(precision(structure_pred, structure_label).mean())
+                results[structure_name][metric] = precision_value
 
             else:
                 raise ValueError(f"Metric '{metric}' non riconosciuta.")
