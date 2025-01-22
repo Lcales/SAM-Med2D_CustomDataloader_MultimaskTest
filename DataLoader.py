@@ -236,4 +236,3 @@ if __name__ == "__main__":
     train_batch_sampler = DataLoader(dataset=train_dataset, batch_size=2, shuffle=True, num_workers=4)
     for i, batched_image in enumerate(tqdm(train_batch_sampler)):
         batched_image = stack_dict_batched(batched_image)
-        print(batched_image["image"].shape, batched_image["label"].shape)
