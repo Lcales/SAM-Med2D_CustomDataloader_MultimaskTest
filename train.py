@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--image_size", type=int, default=256, help="image_size")
     parser.add_argument("--mask_num", type=int, default=5, help="get mask number")
     parser.add_argument("--data_path", type=str, default="data_demo", help="train data path") 
-    parser.add_argument("--metrics", nargs='+', default=['iou', 'dice'], help="metrics")
+    parser.add_argument("--metrics", nargs='+', default=['iou', 'dice', 'precision'], help="metrics")
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--resume", type=str, default=None, help="load resume") 
