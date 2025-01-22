@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("--image_size", type=int, default=256, help="image_size")
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument("--data_path", type=str, default="data_demo", help="train data path") 
-    parser.add_argument("--metrics", nargs='+', default=['iou', 'dice'], help="metrics")
+    parser.add_argument("--metrics", nargs='+', default=['iou', 'dice', 'precision'], help="metrics")
     parser.add_argument("--model_type", type=str, default="vit_b", help="sam model_type")
     parser.add_argument("--sam_checkpoint", type=str, default="pretrain_model/sam-med2d_b.pth", help="sam checkpoint")
     parser.add_argument("--boxes_prompt", type=bool, default=True, help="use boxes prompt")
