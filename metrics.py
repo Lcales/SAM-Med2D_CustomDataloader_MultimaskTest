@@ -63,6 +63,8 @@ def SegMetrics(pred, label, metrics):
             metric_list.append(np.mean(iou(pred, label)))
         elif metric == 'dice':
             metric_list.append(np.mean(dice(pred, label)))
+        elif metric == 'precision':
+            metric_list.append(np.mean(precision(pred, label)))
         else:
             raise ValueError('metric %s not recognized' % metric)
     if pred is not None:
