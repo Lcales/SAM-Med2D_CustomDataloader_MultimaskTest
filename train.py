@@ -228,7 +228,7 @@ def main(args):
     if args.lr_scheduler:
         scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer, 
-            milestones=[3, 6, 9],  # Riduzione progressiva ogni 3 epoche
+            milestones=[4, 8],  # Riduzione progressiva ogni 3 epoche
             gamma=0.5
         )
 
