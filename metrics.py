@@ -79,10 +79,6 @@ def calculate_metrics_per_structure(pred, label, structure_names, metrics):
 
     results = {name: {metric: 0.0 for metric in metrics} for name in structure_names}
 
-    # Debug: stampa le dimensioni delle maschere
-    print(f"Predicted masks shape: {pred.shape}")
-    print(f"Original labels shape: {label.shape}")
-
     for i, structure_name in enumerate(structure_names):
         structure_pred = pred[i:i + 1]  # Seleziona la maschera della struttura
         structure_label = label[i:i + 1]
