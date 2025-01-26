@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--image_size", type=int, default=256, help="image_size")
     parser.add_argument("--mask_num", type=int, default=5, help="get mask number")
     parser.add_argument("--data_path", type=str, default="data_demo", help="train data path") 
-    parser.add_argument("--metrics", nargs='+', default=['iou', 'dice'], help="metrics")
+    parser.add_argument("--metrics", nargs='+', default=['iou', 'dice', 'precision'], help="metrics")
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
     parser.add_argument("--resume", type=str, default=None, help="load resume") 
@@ -104,6 +104,9 @@ def prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_ite
 def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
     train_loader = tqdm(train_loader)
     train_losses = []
+    for param in model.image_encoder.parameters():
+      param.requires_grad = False
+
     train_iter_metrics = [0] * len(args.metrics)
     for batch, batched_input in enumerate(train_loader):
         batched_input = stack_dict_batched(batched_input)
@@ -121,7 +124,7 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
                 value.requires_grad = True
             else:
                 value.requires_grad = False
-
+            # Controlla che tutti i parametri siano congelati
         if args.use_amp:
             labels = batched_input["label"].half()
             image_embeddings = model.image_encoder(batched_input["image"].half())
@@ -222,14 +225,6 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
 
 def main(args):
     model = sam_model_registry[args.model_type](args).to(args.device)
-    # Congela i parametri dell'encoder (backbone)
-    for param in model.image_encoder.parameters():
-      param.requires_grad = False
-
-    # Controlla che tutti i parametri siano congelati
-    for name, param in model.image_encoder.named_parameters():
-      print(name, param.requires_grad)  # Dovrebbe stampare False per tutti
- 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     criterion = FocalDiceloss_IoULoss()
 
@@ -302,5 +297,3 @@ def main(args):
 if __name__ == '__main__':
     args = parse_args()
     main(args)
-
-
