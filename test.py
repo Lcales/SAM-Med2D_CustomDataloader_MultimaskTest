@@ -138,6 +138,9 @@ def main(args):
 
     model.eval()
     test_loss = []
+    iou = []
+    dice = []
+    precision = []
     test_iter_metrics = [0] * len(args.metrics)
     test_metrics = {}
     prompt_dict = {}
@@ -197,6 +200,9 @@ def main(args):
 
         test_batch_metrics = SegMetrics(masks, ori_labels, args.metrics)
         test_batch_metrics = [float('{:.4f}'.format(metric)) for metric in test_batch_metrics]
+        iou.append(test_batch_metrics[0])
+        dice.append(test_batch_metrics[1])
+        precision.append(test_batch_metrics[2])
 
         for j in range(len(args.metrics)):
             test_iter_metrics[j] += test_batch_metrics[j]
@@ -216,6 +222,7 @@ def main(args):
             # Aggiungi un log per verificare quali strutture mancano
             print(f"Structure '{structure_name}' not found in batch {i}")
 
+
     # Calcola la media delle metriche per struttura
     average_structure_metrics = {
       name: {metric: (value / structure_counts[name]) if structure_counts[name] > 0 else 0.0
@@ -225,9 +232,19 @@ def main(args):
 
     print(f"Final test metrics: {test_metrics}")
     print(f"Final metrics per structure: {average_structure_metrics}")
-  
+
     test_iter_metrics = [metric / l for metric in test_iter_metrics]
     test_metrics = {args.metrics[i]: '{:.4f}'.format(test_iter_metrics[i]) for i in range(len(test_iter_metrics))}
+    import pickle
+
+    metrics_dict = {
+      'iou': iou,
+      'dice': dice,
+      'precision': precision
+    }
+
+    with open('metrics_per_image_.pkl', 'wb') as f:
+      pickle.dump(metrics_dict, f)
 
     average_loss = np.mean(test_loss)
     if args.prompt_path is None:
