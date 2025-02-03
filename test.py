@@ -141,6 +141,12 @@ def main(args):
     iou = []
     dice = []
     precision = []
+    metrics_per_structure = {
+    'artery': {'iou': [], 'dice': [], 'precision': []},
+    'liver': {'iou': [], 'dice': [], 'precision': []},
+    'stomach': {'iou': [], 'dice': [], 'precision': []},
+    'vein': {'iou': [], 'dice': [], 'precision': []}
+    }
     test_iter_metrics = [0] * len(args.metrics)
     test_metrics = {}
     prompt_dict = {}
@@ -209,7 +215,10 @@ def main(args):
 
         # Calcola le metriche per struttura
         structure_metrics = calculate_metrics_per_structure(masks, ori_labels, structure_names, args.metrics)
-
+        for structure, metrics in structure_metrics.items():
+          metrics_per_structure[structure]['iou'].append(metrics['iou'])
+          metrics_per_structure[structure]['dice'].append(metrics['dice'])
+          metrics_per_structure[structure]['precision'].append(metrics['precision'])
         # Accumula le metriche per struttura
         # Aggiorna le metriche per struttura e i contatori
         for structure_name in structure_metrics_accum.keys():
@@ -245,6 +254,8 @@ def main(args):
 
     with open('metrics_per_image_.pkl', 'wb') as f:
       pickle.dump(metrics_dict, f)
+    with open('metrics_per_structure_.pkl', 'wb') as f:
+      pickle.dump(metrics_per_structure, f)
 
     average_loss = np.mean(test_loss)
     if args.prompt_path is None:
