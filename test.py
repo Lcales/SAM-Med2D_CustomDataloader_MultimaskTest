@@ -251,7 +251,18 @@ def main(args):
       'dice': dice,
       'precision': precision
     }
+    
+    metrics_dict_batch = {}
+    batch_size = 8
+    num_batches = 232 // batch_size
 
+    for metric_name, metric_list in metrics_dict.items():
+      metric_array = np.array(metric_list)
+      metric_array = metric_array[:232]
+      metric_array = metric_array.reshape(num_batches, batch_size)
+      batch_means = metric_array.mean(axis=1)
+      metrics_dict_batch[metric_name] = batch_means.tolist()
+    
     with open('metrics_per_image_.pkl', 'wb') as f:
       pickle.dump(metrics_dict, f)
     with open('metrics_per_structure_.pkl', 'wb') as f:
