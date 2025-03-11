@@ -116,6 +116,8 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
     train_losses = []
     for param in model.image_encoder.parameters():
       param.requires_grad = False
+    for param in model.prompt_encoder.parameters():
+      param.requires_grad = False
 
     train_iter_metrics = [0] * len(args.metrics)
     for batch, batched_input in enumerate(train_loader):
@@ -129,12 +131,6 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
             batched_input["boxes"] = None
             flag = "point"
 
-        for n, value in model.image_encoder.named_parameters():
-            if "Adapter" in n:
-                value.requires_grad = True
-            else:
-                value.requires_grad = False
-            # Controlla che tutti i parametri siano congelati
         if args.use_amp:
             labels = batched_input["label"].half()
             image_embeddings = model.image_encoder(batched_input["image"].half())
@@ -179,11 +175,6 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
         batched_input = to_device(batched_input, args.device)
     
         image_embeddings = image_embeddings.detach().clone()
-        for n, value in model.named_parameters():
-            if "image_encoder" in n:
-                value.requires_grad = False
-            else:
-                value.requires_grad = True
 
         init_mask_num = np.random.randint(1, args.iter_point - 1)
         for iter in range(args.iter_point):
