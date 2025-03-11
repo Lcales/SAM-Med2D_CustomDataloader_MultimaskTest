@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument("--batch_size", type=int, default=2, help="train batch size")
     parser.add_argument("--image_size", type=int, default=256, help="image_size")
     parser.add_argument("--mask_num", type=int, default=5, help="get mask number")
-    parser.add_argument("--data_path", type=str, default="data_demo", help="train data path") 
+    parser.add_argument("--data_path", type=str, default="data_demo", help="train data path")
     parser.add_argument("--metrics", nargs='+', default=['iou', 'dice', 'precision'], help="metrics")
     parser.add_argument('--device', type=str, default='cuda')
     parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
@@ -35,13 +35,24 @@ def parse_args():
     parser.add_argument("--iter_point", type=int, default=8, help="point iterations")
     parser.add_argument('--lr_scheduler', type=str, default=None, help='lr scheduler')
     parser.add_argument("--point_list", type=list, default=[1, 3, 5, 9], help="point_list")
-    parser.add_argument("--multimask", type=bool, default=True, help="ouput multimask")
-    parser.add_argument("--encoder_adapter", type=bool, default=True, help="use adapter")
-    parser.add_argument("--use_amp", type=bool, default=False, help="use amp")
+
+    # Boolean flags
+    parser.add_argument("--multimask", action='store_true', default=True, help="output multimask")
+    parser.add_argument("--no_multimask", action='store_false', dest='multimask')
+
+    parser.add_argument("--encoder_adapter", action='store_true', default=True, help="use adapter")
+    parser.add_argument("--no_encoder_adapter", action='store_false', dest='encoder_adapter')
+
+    parser.add_argument("--use_amp", action='store_true', default=False, help="use amp")
+    parser.add_argument("--no_use_amp", action='store_false', dest='use_amp')
+
     args = parser.parse_args()
+    
     if args.resume is not None:
         args.sam_checkpoint = None
+    
     return args
+
 
 
 def to_device(batch_input, device):
