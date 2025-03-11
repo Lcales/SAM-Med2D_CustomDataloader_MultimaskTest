@@ -34,16 +34,16 @@ def parse_args():
     parser.add_argument("--sam_checkpoint", type=str, default="pretrain_model/sam-med2d_b.pth", help="sam checkpoint")
 
     # Boolean flags
-    parser.add_argument("--boxes_prompt", action='store_true', help="use boxes prompt")
+    parser.add_argument("--boxes_prompt", action='store_true', default=True, help="use boxes prompt")
     parser.add_argument("--no_boxes_prompt", action='store_false', dest='boxes_prompt')
-
-    parser.add_argument("--multimask", action='store_true', help="output multimask")
+    
+    parser.add_argument("--multimask", action='store_true', default=True, help="output multimask")
     parser.add_argument("--no_multimask", action='store_false', dest='multimask')
 
-    parser.add_argument("--encoder_adapter", action='store_true', help="use adapter")
+    parser.add_argument("--encoder_adapter", action='store_true', default=True, help="use adapter")
     parser.add_argument("--no_encoder_adapter", action='store_false', dest='encoder_adapter')
 
-    parser.add_argument("--save_pred", action='store_true', help="save result")
+    parser.add_argument("--save_pred", action='store_true', default=False, help="save result")
     parser.add_argument("--no_save_pred", action='store_false', dest='save_pred')
 
     # Other arguments
