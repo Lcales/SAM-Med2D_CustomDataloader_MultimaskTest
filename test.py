@@ -19,6 +19,8 @@ import csv
 import json
 
 
+import argparse
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--work_dir", type=str, default="workdir", help="work dir")
@@ -30,18 +32,29 @@ def parse_args():
     parser.add_argument("--metrics", nargs='+', default=['iou', 'dice', 'precision'], help="metrics")
     parser.add_argument("--model_type", type=str, default="vit_b", help="sam model_type")
     parser.add_argument("--sam_checkpoint", type=str, default="pretrain_model/sam-med2d_b.pth", help="sam checkpoint")
-    parser.add_argument("--boxes_prompt", type=bool, default=True, help="use boxes prompt")
+
+    # Boolean flags
+    parser.add_argument("--boxes_prompt", action='store_true', help="use boxes prompt")
+    parser.add_argument("--no_boxes_prompt", action='store_false', dest='boxes_prompt')
+
+    parser.add_argument("--multimask", action='store_true', help="output multimask")
+    parser.add_argument("--no_multimask", action='store_false', dest='multimask')
+
+    parser.add_argument("--encoder_adapter", action='store_true', help="use adapter")
+    parser.add_argument("--no_encoder_adapter", action='store_false', dest='encoder_adapter')
+
+    parser.add_argument("--save_pred", action='store_true', help="save result")
+    parser.add_argument("--no_save_pred", action='store_false', dest='save_pred')
+
+    # Other arguments
     parser.add_argument("--point_num", type=int, default=1, help="point num")
     parser.add_argument("--iter_point", type=int, default=1, help="iter num") 
-    parser.add_argument("--multimask", type=bool, default=True, help="ouput multimask")
-    parser.add_argument("--encoder_adapter", type=bool, default=True, help="use adapter")
     parser.add_argument("--prompt_path", type=str, default=None, help="fix prompt path")
-    parser.add_argument("--save_pred", type=bool, default=False, help="save reslut")
-    parser.add_argument('--epoch_model_dir', type=str, default='workdir/epoch_models', help="Directory containing the epoch models (default: 'workdir/epoch_models')")
+    parser.add_argument('--epoch_model_dir', type=str, default='workdir/epoch_models', help="Directory containing the epoch models")
+
     args = parser.parse_args()
-    if args.iter_point > 1:
-        args.point_num = 1
     return args
+
 
 
 def to_device(batch_input, device):
