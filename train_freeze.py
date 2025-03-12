@@ -114,8 +114,6 @@ def prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_ite
 def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
     train_loader = tqdm(train_loader)
     train_losses = []
-    for param in model.image_encoder.parameters():
-      param.requires_grad = False
     for param in model.prompt_encoder.parameters():
       param.requires_grad = False
 
