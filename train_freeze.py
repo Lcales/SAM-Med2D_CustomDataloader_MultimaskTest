@@ -89,6 +89,9 @@ def prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_ite
             boxes=batched_input.get("boxes", None),
             masks=batched_input.get("mask_inputs", None),
         )
+    
+    for param in model.prompt_encoder.parameters():
+      param.requires_grad = False
 
     low_res_masks, iou_predictions = model.mask_decoder(
         image_embeddings = image_embeddings,
@@ -114,8 +117,6 @@ def prompt_and_decoder(args, batched_input, model, image_embeddings, decoder_ite
 def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
     train_loader = tqdm(train_loader)
     train_losses = []
-    for param in model.prompt_encoder.parameters():
-      param.requires_grad = False
 
     train_iter_metrics = [0] * len(args.metrics)
     for batch, batched_input in enumerate(train_loader):
@@ -128,6 +129,15 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
         else:
             batched_input["boxes"] = None
             flag = "point"
+
+        for n, param in model.prompt_encoder.named_parameters():
+          param.requires_grad = False
+ 
+        for n, value in model.image_encoder.named_parameters():
+          if "Adapter" in n:
+              value.requires_grad = True
+          else:
+              value.requires_grad = False
 
         if args.use_amp:
             labels = batched_input["label"].half()
@@ -173,6 +183,9 @@ def train_one_epoch(args, model, optimizer, train_loader, epoch, criterion):
         batched_input = to_device(batched_input, args.device)
     
         image_embeddings = image_embeddings.detach().clone()
+
+        for param in model.image_encoder.parameters():
+          param.requires_grad = False
 
         init_mask_num = np.random.randint(1, args.iter_point - 1)
         for iter in range(args.iter_point):
